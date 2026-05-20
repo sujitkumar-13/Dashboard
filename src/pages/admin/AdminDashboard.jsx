@@ -95,7 +95,12 @@ export default function AdminDashboard() {
           <div className="p-3 bg-orange-100 text-orange-600 rounded-xl"><Clock className="w-6 h-6" /></div>
           <div>
             <div className="text-sm font-medium text-gray-500">Pending</div>
-            <div className="text-2xl font-bold text-gray-900">{filteredRequests.filter(r => r.reqStatus === 'Pending Approval').length}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {filteredRequests.filter(r =>
+                r.reqStatus === 'Pending Approval' ||
+                (r.reqStatus === 'Rejected' && r.studentStatus === 'Pending')
+              ).length}
+            </div>
           </div>
         </Card>
         <Card className="p-5 flex items-center gap-4 bg-gradient-to-br from-white to-yellow-50/50">
@@ -139,21 +144,32 @@ export default function AdminDashboard() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        className="block w-full pl-3 pr-10 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
-                        value={req.studentStatus}
-                        onChange={(e) => handleStatusChange(req.id, e)}
-                      >
-                        {Object.values(STUDENT_STATUS).map(status => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
+                      {req.studentStatus === 'Scheduled' ? (
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                            🔒 Scheduled
+                          </span>
+                        </div>
+                      ) : (
+                        <select
+                          className="block w-full pl-3 pr-10 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+                          value={req.studentStatus}
+                          onChange={(e) => handleStatusChange(req.id, e)}
+                        >
+                          {Object.values(STUDENT_STATUS).map(status => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="space-y-2 flex flex-col items-start">
                         <Badge status={req.reqStatus}>Req: {req.reqStatus}</Badge>
-                        {reqSlot && (
+                        {reqSlot && req.reqStatus !== 'Rejected' && (
                           <Badge status={reqSlot.status}>Slot: {reqSlot.status}</Badge>
+                        )}
+                        {req.reqStatus === 'Rejected' && (
+                          <Badge status="Released">Slot: Released</Badge>
                         )}
                       </div>
                     </td>

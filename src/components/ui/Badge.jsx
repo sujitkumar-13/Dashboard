@@ -11,10 +11,8 @@ export const Badge = ({ className, status, children, ...props }) => {
   const statusColors = {
     'Available': 'bg-green-100 text-green-800 border-green-200',
     'Booked': 'bg-red-100 text-red-800 border-red-200',
+    'Released': 'bg-purple-100 text-purple-800 border-purple-200',
     'Parked': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'Parked / xyz': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'Parked / Call Back': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'Unreachable / Parked': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     'Scheduled': 'bg-blue-100 text-blue-800 border-blue-200',
     'Resolved': 'bg-blue-100 text-blue-800 border-blue-200',
     'Disinterested': 'bg-gray-100 text-gray-800 border-gray-200',
