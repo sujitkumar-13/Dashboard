@@ -18,13 +18,60 @@ export default function AdminDashboard() {
   const [selectedReqId, setSelectedReqId] = useState(null);
   const [modalMode, setModalMode] = useState('assign'); // 'assign' | 'schedule'
   const [selectedInterviewer, setSelectedInterviewer] = useState('All');
+  const [filterStudentStatus, setFilterStudentStatus] = useState('All');
+  const [filterReqStatus, setFilterReqStatus] = useState('All');
+  const [filterSlotStatus, setFilterSlotStatus] = useState('All');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
 
   const interviewers = ['All', ...new Set(slots.map(s => s.interviewerName).filter(Boolean))];
 
   const filteredRequests = requests.filter(req => {
-    if (selectedInterviewer === 'All') return true;
-    const reqSlot = slots.find(s => s.id === req.slotId);
-    return reqSlot && reqSlot.interviewerName === selectedInterviewer;
+    // 1. Interviewer filter
+    if (selectedInterviewer !== 'All') {
+      const reqSlot = slots.find(s => s.id === req.slotId);
+      if (!reqSlot || reqSlot.interviewerName !== selectedInterviewer) return false;
+    }
+    
+    // 2. Student Status filter
+    if (filterStudentStatus !== 'All' && req.studentStatus !== filterStudentStatus) return false;
+    
+    // 3. Request Status filter
+    if (filterReqStatus !== 'All' && req.reqStatus !== filterReqStatus) return false;
+    
+    // 4. Slot Status filter
+    const reqSlotForStatus = slots.find(s => s.id === req.slotId);
+    if (filterSlotStatus !== 'All') {
+      let currentSlotStatus = '—';
+      if (req.reqStatus === 'Rejected') {
+        currentSlotStatus = 'Released';
+      } else if (reqSlotForStatus) {
+        currentSlotStatus = reqSlotForStatus.status;
+      }
+      if (currentSlotStatus !== filterSlotStatus) return false;
+    }
+    
+    // 5. Date Range Filter
+    if (filterDateFrom || filterDateTo) {
+      if (!reqSlotForStatus) return false; // If no slot, it doesn't have a date
+      const slotDate = new Date(reqSlotForStatus.date);
+      // Reset time for proper date comparison
+      slotDate.setHours(0,0,0,0);
+      
+      if (filterDateFrom) {
+        const fromDate = new Date(filterDateFrom);
+        fromDate.setHours(0,0,0,0);
+        if (slotDate < fromDate) return false;
+      }
+      
+      if (filterDateTo) {
+        const toDate = new Date(filterDateTo);
+        toDate.setHours(0,0,0,0);
+        if (slotDate > toDate) return false;
+      }
+    }
+
+    return true;
   });
 
   const availableSlots = slots.filter(s => s.status === 'Available');
@@ -124,6 +171,85 @@ export default function AdminDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Filter Bar */}
+      <Card className="p-4 bg-gray-50 border border-gray-100">
+        <div className="flex flex-col md:flex-row flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Student Status</label>
+            <select
+              className="block w-full py-1.5 px-3 text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+              value={filterStudentStatus}
+              onChange={(e) => setFilterStudentStatus(e.target.value)}
+            >
+              <option value="All">All</option>
+              {Object.values(STUDENT_STATUS).map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Req Status</label>
+            <select
+              className="block w-full py-1.5 px-3 text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+              value={filterReqStatus}
+              onChange={(e) => setFilterReqStatus(e.target.value)}
+            >
+              <option value="All">All</option>
+              {['Pending Approval', 'Approved', 'Rejected', 'Parked', 'Resolved'].map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Slot Status</label>
+            <select
+              className="block w-full py-1.5 px-3 text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+              value={filterSlotStatus}
+              onChange={(e) => setFilterSlotStatus(e.target.value)}
+            >
+              <option value="All">All</option>
+              {['Available', 'Booked', 'Released'].map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[140px]">
+            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">From Date</label>
+            <input
+              type="date"
+              className="block w-full py-1.5 px-3 text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+            />
+          </div>
+          <div className="flex-1 min-w-[140px]">
+            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">To Date</label>
+            <input
+              type="date"
+              className="block w-full py-1.5 px-3 text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+            />
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-[34px] text-gray-500"
+              onClick={() => {
+                setFilterStudentStatus('All');
+                setFilterReqStatus('All');
+                setFilterSlotStatus('All');
+                setFilterDateFrom('');
+                setFilterDateTo('');
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
