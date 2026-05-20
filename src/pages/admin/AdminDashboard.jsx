@@ -127,21 +127,22 @@ export default function AdminDashboard() {
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full min-w-[960px] divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Candidate</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slot Details</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Req / Slot Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Req Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slot Status</th>
+                <th className="sticky right-0 z-10 bg-gray-50 px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredRequests.map(req => {
                 const reqSlot = slots.find(s => s.id === req.slotId);
                 return (
-                  <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr key={req.id} className="group hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">{req.candidateName}</div>
                       <div className="text-sm text-gray-500">{req.candidateEmail}</div>
@@ -175,32 +176,41 @@ export default function AdminDashboard() {
                         </select>
                       )}
                     </td>
+                    {/* Req Status — separate column */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-2 flex flex-col items-start">
-                        <Badge status={req.reqStatus}>Req: {req.reqStatus}</Badge>
-                        {reqSlot && req.reqStatus !== 'Rejected' && (
-                          <Badge status={reqSlot.status}>Slot: {reqSlot.status}</Badge>
-                        )}
-                        {req.reqStatus === 'Rejected' && (
-                          <Badge status="Released">Slot: Released</Badge>
-                        )}
-                      </div>
+                      <Badge status={req.reqStatus}>{req.reqStatus}</Badge>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      {req.reqStatus === 'Pending Approval' && (
-                        <>
-                          <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50" onClick={() => handleApprove(req.id)}>Approve</Button>
-                          <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => handleReject(req.id)}>Reject</Button>
-                        </>
+                    {/* Slot Status — separate column */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {req.reqStatus === 'Rejected' ? (
+                        <Badge status="Released">Released</Badge>
+                      ) : reqSlot ? (
+                        <Badge status={reqSlot.status}>{reqSlot.status}</Badge>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">—</span>
                       )}
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => openAssignModal(req.id)}
-                        disabled={req.studentStatus === 'Disinterested' || req.reqStatus === 'Resolved'}
-                      >
-                        Assign Slot
-                      </Button>
+                    </td>
+                    <td className="sticky right-0 z-10 bg-white px-6 py-4 whitespace-nowrap text-sm font-medium shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)] group-hover:bg-gray-50/50">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Fixed-width area for Approve/Reject — stays empty if not needed */}
+                        <div className="flex items-center gap-1 min-w-[150px] justify-end">
+                          {req.reqStatus === 'Pending Approval' && (
+                            <>
+                              <Button size="sm" variant="ghost" className="text-green-600 hover:bg-green-50" onClick={() => handleApprove(req.id)}>Approve</Button>
+                              <Button size="sm" variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => handleReject(req.id)}>Reject</Button>
+                            </>
+                          )}
+                        </div>
+                        {/* Assign Slot — always in same fixed position */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openAssignModal(req.id)}
+                          disabled={req.studentStatus === 'Disinterested' || req.reqStatus === 'Resolved'}
+                        >
+                          Assign Slot
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
