@@ -61,7 +61,7 @@ router.patch('/:id/status', async (req, res) => {
     if (!request) return res.status(404).json({ message: 'Request not found' });
 
     let newReqStatus = request.reqStatus;
-    let newSlotStatus = 'Booked';
+    let newSlotStatus = null; // null = don't touch the slot
 
     switch (studentStatus) {
       case 'Not Responding':
@@ -85,14 +85,18 @@ router.patch('/:id/status', async (req, res) => {
         newSlotStatus = 'Available';
         break;
       default:
+        // For statuses like 'Pending' — only update studentStatus,
+        // never touch the slot or trigger auto-reject
         newReqStatus = request.reqStatus;
+        newSlotStatus = null;
     }
 
     request.studentStatus = studentStatus;
     request.reqStatus = newReqStatus;
     const updatedRequest = await request.save();
 
-    if (request.slotId) {
+    // Only update slot if newSlotStatus was explicitly set
+    if (request.slotId && newSlotStatus !== null) {
       if (newSlotStatus === 'Available') {
         const activeBookingsCount = await Request.countDocuments({
           slotId: request.slotId,
@@ -102,11 +106,9 @@ router.patch('/:id/status', async (req, res) => {
         if (activeBookingsCount === 0) {
           await Slot.findByIdAndUpdate(request.slotId, { status: 'Available' });
         }
-      } else {
-        await Slot.findByIdAndUpdate(request.slotId, { status: newSlotStatus });
-        if (newSlotStatus === 'Booked') {
-          await autoRejectOthers(request.slotId, updatedRequest._id);
-        }
+      } else if (newSlotStatus === 'Booked') {
+        await Slot.findByIdAndUpdate(request.slotId, { status: 'Booked' });
+        await autoRejectOthers(request.slotId, updatedRequest._id);
       }
       req.app.get('io').emit('slot_updated');
     }

@@ -16,6 +16,7 @@ export default function AdminDashboard() {
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedReqId, setSelectedReqId] = useState(null);
+  const [modalMode, setModalMode] = useState('assign'); // 'assign' | 'schedule'
   const [selectedInterviewer, setSelectedInterviewer] = useState('All');
 
   const interviewers = ['All', ...new Set(slots.map(s => s.interviewerName).filter(Boolean))];
@@ -30,6 +31,14 @@ export default function AdminDashboard() {
 
   const handleStatusChange = (reqId, e) => {
     const newStatus = e.target.value;
+
+    // If admin selects 'Scheduled', don't directly update —
+    // open Assign Slot modal so admin picks a proper new slot first
+    if (newStatus === 'Scheduled') {
+      openAssignModal(reqId, 'schedule');
+      return;
+    }
+
     updateStudentStatus(reqId, newStatus);
     toast.success(`Status mapped successfully!`);
   };
@@ -44,15 +53,19 @@ export default function AdminDashboard() {
     toast.success('Request rejected. Slot is now available.');
   };
 
-  const openAssignModal = (reqId) => {
+  const openAssignModal = (reqId, mode = 'assign') => {
     setSelectedReqId(reqId);
+    setModalMode(mode);
     setAssignModalOpen(true);
   };
 
   const handleAssignConfirm = (slotId) => {
     if (!selectedReqId) return;
     adminAssignSlot(selectedReqId, slotId);
-    toast.success('Slot successfully assigned to candidate!');
+    const msg = modalMode === 'schedule'
+      ? 'Candidate scheduled on new slot successfully!'
+      : 'Slot successfully assigned to candidate!';
+    toast.success(msg);
     setAssignModalOpen(false);
   };
 
@@ -197,9 +210,22 @@ export default function AdminDashboard() {
         </div>
       </Card>
 
-      <Modal isOpen={assignModalOpen} onClose={() => setAssignModalOpen(false)} title="Manual Slot Booking">
+      <Modal
+        isOpen={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        title={modalMode === 'schedule' ? 'Select Slot to Schedule' : 'Manual Slot Booking'}
+      >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">Select an available slot to assign to this candidate.</p>
+          {modalMode === 'schedule' ? (
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <span className="text-blue-500 text-base mt-0.5">ℹ️</span>
+              <p className="text-sm text-blue-700">
+                Student ko schedule karne ke liye pehle ek available slot select karein. Purana slot already book hai.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">Select an available slot to assign to this candidate.</p>
+          )}
           <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
             {availableSlots.length === 0 ? (
               <div className="text-center py-6 text-gray-500 text-sm">No available slots.</div>
