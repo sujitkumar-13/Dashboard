@@ -18,13 +18,11 @@ export const Sidebar = () => {
     if (user.role === ROLES.INTERVIEWER) {
       return [
         { name: 'My Slots', path: '/interviewer/slots', icon: Calendar },
-        { name: 'Settings', path: '/interviewer/settings', icon: Settings },
       ];
     }
     if (user.role === ROLES.ADMIN) {
       return [
         { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-        { name: 'All Requests', path: '/admin/requests', icon: Users },
       ];
     }
     return [];

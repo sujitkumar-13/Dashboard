@@ -49,12 +49,12 @@ export const useRequestStore = create((set, get) => ({
     }
   },
   
-  updateStudentStatus: async (reqId, newStudentStatus) => {
+  updateStudentStatus: async (reqId, newStudentStatus, updatedBy) => {
     try {
       const response = await fetch(`${API_URL}/${reqId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentStatus: newStudentStatus })
+        body: JSON.stringify({ studentStatus: newStudentStatus, updatedBy })
       });
       if (!response.ok) throw new Error('Failed to update status');
       const updatedReq = await response.json();
@@ -71,9 +71,13 @@ export const useRequestStore = create((set, get) => ({
     }
   },
 
-  approveRequest: async (reqId) => {
+  approveRequest: async (reqId, updatedBy) => {
     try {
-      const response = await fetch(`${API_URL}/${reqId}/approve`, { method: 'PATCH' });
+      const response = await fetch(`${API_URL}/${reqId}/approve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updatedBy })
+      });
       if (!response.ok) throw new Error('Failed to approve');
       const updatedReq = await response.json();
       set((state) => ({
@@ -84,9 +88,13 @@ export const useRequestStore = create((set, get) => ({
     }
   },
 
-  rejectRequest: async (reqId) => {
+  rejectRequest: async (reqId, updatedBy) => {
     try {
-      const response = await fetch(`${API_URL}/${reqId}/reject`, { method: 'PATCH' });
+      const response = await fetch(`${API_URL}/${reqId}/reject`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updatedBy })
+      });
       if (!response.ok) throw new Error('Failed to reject');
       const updatedReq = await response.json();
       set((state) => ({
@@ -100,12 +108,12 @@ export const useRequestStore = create((set, get) => ({
     }
   },
 
-  adminAssignSlot: async (reqId, slotId) => {
+  adminAssignSlot: async (reqId, slotId, updatedBy) => {
     try {
       const response = await fetch(`${API_URL}/${reqId}/assign`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slotId })
+        body: JSON.stringify({ slotId, updatedBy })
       });
       if (!response.ok) throw new Error('Failed to assign slot');
       const updatedReq = await response.json();

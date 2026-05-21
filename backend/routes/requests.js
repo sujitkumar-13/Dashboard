@@ -4,11 +4,21 @@ const Request = require('../models/Request');
 const Slot = require('../models/Slot');
 
 // Helper to auto-reject competing requests
-async function autoRejectOthers(slotId, approvedRequestId) {
+async function autoRejectOthers(slotId, approvedRequestId, updatedBy) {
   if (!slotId) return;
+  const systemUser = updatedBy ? `${updatedBy} (System Auto-Reject)` : 'System Auto-Reject';
   await Request.updateMany(
     { slotId: slotId, _id: { $ne: approvedRequestId }, reqStatus: { $ne: 'Rejected' } },
-    { $set: { reqStatus: 'Parked', studentStatus: 'Pending' } }
+    { 
+      $set: { 
+        reqStatus: 'Parked', 
+        studentStatus: 'Pending',
+        auditInfo: {
+          updatedBy: systemUser,
+          updatedAt: new Date()
+        }
+      } 
+    }
   );
 }
 
@@ -55,7 +65,7 @@ router.post('/', async (req, res) => {
 
 // Update student status (Admin updates status, trigger logic)
 router.patch('/:id/status', async (req, res) => {
-  const { studentStatus } = req.body;
+  const { studentStatus, updatedBy } = req.body;
   try {
     const request = await Request.findById(req.params.id);
     if (!request) return res.status(404).json({ message: 'Request not found' });
@@ -97,6 +107,12 @@ router.patch('/:id/status', async (req, res) => {
 
     request.studentStatus = studentStatus;
     request.reqStatus = newReqStatus;
+    if (updatedBy) {
+      request.auditInfo = {
+        updatedBy,
+        updatedAt: new Date()
+      };
+    }
     const updatedRequest = await request.save();
 
     // Only update slot if newSlotStatus was explicitly set
@@ -112,7 +128,7 @@ router.patch('/:id/status', async (req, res) => {
         }
       } else if (newSlotStatus === 'Booked') {
         await Slot.findByIdAndUpdate(request.slotId, { status: 'Booked' });
-        await autoRejectOthers(request.slotId, updatedRequest._id);
+        await autoRejectOthers(request.slotId, updatedRequest._id, updatedBy);
       }
       req.app.get('io').emit('slot_updated');
     }
@@ -126,17 +142,24 @@ router.patch('/:id/status', async (req, res) => {
 
 // Approve Request
 router.patch('/:id/approve', async (req, res) => {
+  const { updatedBy } = req.body;
   try {
     const request = await Request.findById(req.params.id);
     if (!request) return res.status(404).json({ message: 'Request not found' });
 
     request.studentStatus = 'Scheduled';
     request.reqStatus = 'Resolved';
+    if (updatedBy) {
+      request.auditInfo = {
+        updatedBy,
+        updatedAt: new Date()
+      };
+    }
     const updatedRequest = await request.save();
     
     if (request.slotId) {
       await Slot.findByIdAndUpdate(request.slotId, { status: 'Booked' });
-      await autoRejectOthers(request.slotId, updatedRequest._id);
+      await autoRejectOthers(request.slotId, updatedRequest._id, updatedBy);
       req.app.get('io').emit('slot_updated');
     }
     
@@ -149,12 +172,19 @@ router.patch('/:id/approve', async (req, res) => {
 
 // Reject Request
 router.patch('/:id/reject', async (req, res) => {
+  const { updatedBy } = req.body;
   try {
     const request = await Request.findById(req.params.id);
     if (!request) return res.status(404).json({ message: 'Request not found' });
 
     request.reqStatus = 'Rejected';
     request.studentStatus = 'Pending';
+    if (updatedBy) {
+      request.auditInfo = {
+        updatedBy,
+        updatedAt: new Date()
+      };
+    }
     const updatedRequest = await request.save();
 
     if (request.slotId) {
@@ -178,7 +208,7 @@ router.patch('/:id/reject', async (req, res) => {
 
 // Admin assign slot manually
 router.patch('/:id/assign', async (req, res) => {
-  const { slotId } = req.body;
+  const { slotId, updatedBy } = req.body;
   try {
     const request = await Request.findById(req.params.id);
     if (!request) return res.status(404).json({ message: 'Request not found' });
@@ -197,11 +227,17 @@ router.patch('/:id/assign', async (req, res) => {
 
     // Book new slot
     await Slot.findByIdAndUpdate(slotId, { status: 'Booked' });
-    await autoRejectOthers(slotId, request._id);
+    await autoRejectOthers(slotId, request._id, updatedBy);
 
     request.slotId = slotId;
     request.studentStatus = 'Scheduled';
     request.reqStatus = 'Resolved';
+    if (updatedBy) {
+      request.auditInfo = {
+        updatedBy,
+        updatedAt: new Date()
+      };
+    }
     const updatedRequest = await request.save();
 
     req.app.get('io').emit('slot_updated');

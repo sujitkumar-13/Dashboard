@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRequestStore, STUDENT_STATUS } from '../../store/requestStore';
 import { useSlotStore } from '../../store/slotStore';
+import { useAuthStore } from '../../store/authStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -13,6 +14,8 @@ export default function AdminDashboard() {
   const requests = useRequestStore(state => state.requests);
   const slots = useSlotStore(state => state.slots);
   const { updateStudentStatus, approveRequest, rejectRequest, adminAssignSlot } = useRequestStore(state => state);
+  const user = useAuthStore(state => state.user);
+  const schedulerName = user?.name || 'Unknown Scheduler';
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedReqId, setSelectedReqId] = useState(null);
@@ -105,17 +108,17 @@ export default function AdminDashboard() {
       return;
     }
 
-    updateStudentStatus(reqId, newStatus);
+    updateStudentStatus(reqId, newStatus, schedulerName);
     toast.success(`Status mapped successfully!`);
   };
 
   const handleApprove = (reqId) => {
-    approveRequest(reqId);
+    approveRequest(reqId, schedulerName);
     toast.success('Request approved.');
   };
 
   const handleReject = (reqId) => {
-    rejectRequest(reqId);
+    rejectRequest(reqId, schedulerName);
     toast.success('Request rejected. Slot is now available.');
   };
 
@@ -127,7 +130,7 @@ export default function AdminDashboard() {
 
   const handleAssignConfirm = (slotId) => {
     if (!selectedReqId) return;
-    adminAssignSlot(selectedReqId, slotId);
+    adminAssignSlot(selectedReqId, slotId, schedulerName);
     const msg = modalMode === 'schedule'
       ? 'Candidate scheduled on new slot successfully!'
       : 'Slot successfully assigned to candidate!';
@@ -292,14 +295,15 @@ export default function AdminDashboard() {
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full min-w-[960px] divide-y divide-gray-200">
+          <table className="min-w-full min-w-[1250px] divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Candidate</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slot Details</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[180px] min-w-[180px]">Student Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Req Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slot Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[220px] min-w-[220px]">Audit Info</th>
                 <th className="sticky right-0 z-10 bg-gray-50 px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">Actions</th>
               </tr>
             </thead>
@@ -322,7 +326,7 @@ export default function AdminDashboard() {
                         <span className="text-sm text-gray-400 italic">No slot assigned</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap w-[180px] min-w-[180px]">
                       {req.studentStatus === 'Scheduled' ? (
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
@@ -331,7 +335,7 @@ export default function AdminDashboard() {
                         </div>
                       ) : (
                         <select
-                          className="block w-full pl-3 pr-10 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+                          className="block w-full min-w-[150px] pl-3 pr-10 py-1.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
                           value={req.studentStatus}
                           onChange={(e) => handleStatusChange(req.id, e)}
                         >
@@ -349,6 +353,19 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {reqSlot ? (
                         <Badge status={reqSlot.status}>{reqSlot.status}</Badge>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">—</span>
+                      )}
+                    </td>
+                    {/* Audit Info — separate column */}
+                    <td className="px-6 py-4 whitespace-nowrap w-[220px] min-w-[220px]">
+                      {req.auditInfo && req.auditInfo.updatedBy ? (
+                        <div className="flex flex-col gap-0.5 leading-tight">
+                          <span className="text-xs font-semibold text-gray-900">
+                            Updated: {format(parseISO(req.auditInfo.updatedAt), 'MMM d, yyyy, h:mm a')}
+                          </span>
+                          <span className="text-gray-500 text-xs">By: {req.auditInfo.updatedBy}</span>
+                        </div>
                       ) : (
                         <span className="text-xs text-gray-400 italic">—</span>
                       )}

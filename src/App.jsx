@@ -49,13 +49,11 @@ function App() {
             {/* Interviewer Routes */}
             <Route element={<DashboardLayout allowedRoles={[ROLES.INTERVIEWER]} />}>
               <Route path="/interviewer/slots" element={<InterviewerDashboard />} />
-              <Route path="/interviewer/settings" element={<div className="p-4">Settings Placeholder</div>} />
             </Route>
 
             {/* Admin Routes */}
             <Route element={<DashboardLayout allowedRoles={[ROLES.ADMIN]} />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/requests" element={<div className="p-4">All Requests Placeholder</div>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />
