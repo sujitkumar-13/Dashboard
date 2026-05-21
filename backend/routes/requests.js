@@ -84,8 +84,12 @@ router.patch('/:id/status', async (req, res) => {
         newReqStatus = 'Rejected';
         newSlotStatus = 'Available';
         break;
+      case 'Pending':
+        newReqStatus = 'Parked';
+        newSlotStatus = null;
+        break;
       default:
-        // For statuses like 'Pending' — only update studentStatus,
+        // For other statuses — only update studentStatus,
         // never touch the slot or trigger auto-reject
         newReqStatus = request.reqStatus;
         newSlotStatus = null;
