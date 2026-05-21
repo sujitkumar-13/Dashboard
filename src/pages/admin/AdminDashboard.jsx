@@ -23,6 +23,8 @@ export default function AdminDashboard() {
   const [filterSlotStatus, setFilterSlotStatus] = useState('All');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
+  const [filterTimeFrom, setFilterTimeFrom] = useState('');
+  const [filterTimeTo, setFilterTimeTo] = useState('');
 
   const interviewers = ['All', ...new Set(slots.map(s => s.interviewerName).filter(Boolean))];
 
@@ -66,6 +68,25 @@ export default function AdminDashboard() {
         const toDate = new Date(filterDateTo);
         toDate.setHours(0, 0, 0, 0);
         if (slotDate > toDate) return false;
+      }
+    }
+
+    // 6. Time Range Filter
+    if (filterTimeFrom || filterTimeTo) {
+      if (!reqSlotForStatus) return false; // If no slot, it doesn't have a time
+      const slotDate = new Date(reqSlotForStatus.date);
+      const slotMinutes = slotDate.getHours() * 60 + slotDate.getMinutes();
+
+      if (filterTimeFrom) {
+        const [fromHours, fromMinutes] = filterTimeFrom.split(':').map(Number);
+        const fromTimeMinutes = fromHours * 60 + fromMinutes;
+        if (slotMinutes < fromTimeMinutes) return false;
+      }
+
+      if (filterTimeTo) {
+        const [toHours, toMinutes] = filterTimeTo.split(':').map(Number);
+        const toTimeMinutes = toHours * 60 + toMinutes;
+        if (slotMinutes > toTimeMinutes) return false;
       }
     }
 
@@ -230,6 +251,24 @@ export default function AdminDashboard() {
               onChange={(e) => setFilterDateTo(e.target.value)}
             />
           </div>
+          <div className="flex-1 min-w-[120px]">
+            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">From Time</label>
+            <input
+              type="time"
+              className="block w-full py-1.5 px-3 text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+              value={filterTimeFrom}
+              onChange={(e) => setFilterTimeFrom(e.target.value)}
+            />
+          </div>
+          <div className="flex-1 min-w-[120px]">
+            <label className="block text-xs font-medium text-gray-500 uppercase mb-1">To Time</label>
+            <input
+              type="time"
+              className="block w-full py-1.5 px-3 text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md border bg-white shadow-sm"
+              value={filterTimeTo}
+              onChange={(e) => setFilterTimeTo(e.target.value)}
+            />
+          </div>
           <div>
             <Button
               variant="outline"
@@ -241,6 +280,8 @@ export default function AdminDashboard() {
                 setFilterSlotStatus('All');
                 setFilterDateFrom('');
                 setFilterDateTo('');
+                setFilterTimeFrom('');
+                setFilterTimeTo('');
               }}
             >
               Clear Filters
