@@ -8,7 +8,7 @@ async function autoRejectOthers(slotId, approvedRequestId) {
   if (!slotId) return;
   await Request.updateMany(
     { slotId: slotId, _id: { $ne: approvedRequestId }, reqStatus: { $ne: 'Rejected' } },
-    { $set: { reqStatus: 'Rejected', studentStatus: 'Pending' } }
+    { $set: { reqStatus: 'Parked', studentStatus: 'Pending' } }
   );
 }
 

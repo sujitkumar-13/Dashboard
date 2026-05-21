@@ -32,41 +32,39 @@ export default function AdminDashboard() {
       const reqSlot = slots.find(s => s.id === req.slotId);
       if (!reqSlot || reqSlot.interviewerName !== selectedInterviewer) return false;
     }
-    
+
     // 2. Student Status filter
     if (filterStudentStatus !== 'All' && req.studentStatus !== filterStudentStatus) return false;
-    
+
     // 3. Request Status filter
     if (filterReqStatus !== 'All' && req.reqStatus !== filterReqStatus) return false;
-    
+
     // 4. Slot Status filter
     const reqSlotForStatus = slots.find(s => s.id === req.slotId);
     if (filterSlotStatus !== 'All') {
       let currentSlotStatus = '—';
-      if (req.reqStatus === 'Rejected') {
-        currentSlotStatus = 'Released';
-      } else if (reqSlotForStatus) {
+      if (reqSlotForStatus) {
         currentSlotStatus = reqSlotForStatus.status;
       }
       if (currentSlotStatus !== filterSlotStatus) return false;
     }
-    
+
     // 5. Date Range Filter
     if (filterDateFrom || filterDateTo) {
       if (!reqSlotForStatus) return false; // If no slot, it doesn't have a date
       const slotDate = new Date(reqSlotForStatus.date);
       // Reset time for proper date comparison
-      slotDate.setHours(0,0,0,0);
-      
+      slotDate.setHours(0, 0, 0, 0);
+
       if (filterDateFrom) {
         const fromDate = new Date(filterDateFrom);
-        fromDate.setHours(0,0,0,0);
+        fromDate.setHours(0, 0, 0, 0);
         if (slotDate < fromDate) return false;
       }
-      
+
       if (filterDateTo) {
         const toDate = new Date(filterDateTo);
-        toDate.setHours(0,0,0,0);
+        toDate.setHours(0, 0, 0, 0);
         if (slotDate > toDate) return false;
       }
     }
@@ -124,7 +122,7 @@ export default function AdminDashboard() {
           <p className="text-gray-500 mt-1">Manage booking requests and candidate statuses.</p>
         </div>
         <div>
-          <select 
+          <select
             className="block w-full sm:w-48 pl-3 pr-10 py-2.5 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-lg border bg-white shadow-sm cursor-pointer"
             value={selectedInterviewer}
             onChange={(e) => setSelectedInterviewer(e.target.value)}
@@ -209,7 +207,7 @@ export default function AdminDashboard() {
               onChange={(e) => setFilterSlotStatus(e.target.value)}
             >
               <option value="All">All</option>
-              {['Available', 'Booked', 'Released'].map(status => (
+              {['Available', 'Booked'].map(status => (
                 <option key={status} value={status}>{status}</option>
               ))}
             </select>
@@ -308,9 +306,7 @@ export default function AdminDashboard() {
                     </td>
                     {/* Slot Status — separate column */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {req.reqStatus === 'Rejected' ? (
-                        <Badge status="Released">Released</Badge>
-                      ) : reqSlot ? (
+                      {reqSlot ? (
                         <Badge status={reqSlot.status}>{reqSlot.status}</Badge>
                       ) : (
                         <span className="text-xs text-gray-400 italic">—</span>
